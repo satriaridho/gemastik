@@ -28,6 +28,7 @@ const initialLocations: Location[] = [
   { id: '1', name: 'Kasihan', date: '12/8/2025', isActive: true, lat: -7.795579, lng: 110.328797 },
   { id: '2', name: 'Blunyah Gede', date: '12/8/2025', isActive: true, lat: -7.782333, lng: 110.367083 },
   { id: '3', name: 'Banguntapan', date: '12/8/2025', isActive: true, lat: -7.789456, lng: 110.345678 },
+  { id: '4', name: 'Nglurup', date: '12/8/2025', isActive: true, lat: -7.78945, lng: 111.34568 },
 ];
 
 export function LocationProvider({ children }: { children: ReactNode }) {

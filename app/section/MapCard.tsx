@@ -9,6 +9,13 @@ export default function MapCard() {
   const [map, setMap] = useState<any>(null);
   const [markers, setMarkers] = useState<any[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+
+  // Filter locations based on search term
+  const filteredLocations = locations.filter((location) =>
+    location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    location.date.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   useEffect(() => {
     // Load Leaflet CSS
@@ -30,6 +37,26 @@ export default function MapCard() {
       }
     };
   }, []);
+
+  const navigateToLocation = (location: any) => {
+    if (!map) return;
+    
+    setSelectedLocation(location);
+    
+    // Pan to the location coordinates
+    map.setView([location.lat, location.lng], 15);
+    
+    // Find the corresponding marker and open its popup
+    const marker = markers.find(m => {
+      const markerLat = m.getLatLng().lat;
+      const markerLng = m.getLatLng().lng;
+      return markerLat === location.lat && markerLng === location.lng;
+    });
+    
+    if (marker) {
+      marker.openPopup();
+    }
+  };
 
   const initializeMap = () => {
     if (!mapRef.current || !window.L) return;
@@ -110,30 +137,66 @@ export default function MapCard() {
         style={{ minHeight: '500px' }}
       />
 
-      {/* Location List */}
+      {/* Location List with Search */}
       <div className="w-full mt-4">
-        <h4 className="text-md font-semibold text-gray-800 mb-2">Daftar Lokasi:</h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {locations.map((location) => (
-            <div 
-              key={location.id}
-              className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                selectedLocation?.id === location.id 
-                  ? 'bg-green-50 border-green-300' 
-                  : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-              }`}
-              onClick={() => setSelectedLocation(location)}
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-md font-semibold text-gray-800">Daftar Lokasi:</h4>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Cari lokasi..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
+            />
+            <svg
+              className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <div className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full ${location.isActive ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                <div>
-                  <p className="font-medium text-gray-800">{location.name}</p>
-                  <p className="text-sm text-black">{location.date}</p>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
+        </div>
+        
+        {/* Horizontal Scrollable Location List */}
+        <div className="overflow-x-auto">
+          <div className="flex gap-3 pb-2" style={{ minWidth: 'max-content' }}>
+            {filteredLocations.map((location) => (
+              <div 
+                key={location.id}
+                className={`p-3 rounded-lg border cursor-pointer transition-colors flex-shrink-0 ${
+                  selectedLocation?.id === location.id 
+                    ? 'bg-green-50 border-green-300' 
+                    : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                }`}
+                style={{ minWidth: '200px' }}
+                onClick={() => navigateToLocation(location)}
+              >
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${location.isActive ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-gray-800 truncate">{location.name}</p>
+                    <p className="text-sm text-black">{location.date}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
+        
+        {/* Search Results Info */}
+        {searchTerm && (
+          <p className="text-sm text-gray-600 mt-2">
+            Menampilkan {filteredLocations.length} dari {locations.length} lokasi
+          </p>
+        )}
       </div>
 
       {/* Selected Location Details */}
