@@ -1,247 +1,270 @@
-# Website Lomba - Sistem Pengelolaan Data Sampah
+# Website Lomba - Sistem Analisis Sampah Aerial
 
-## Cara Melakukan Sorting Data dari Database
+Aplikasi web untuk analisis sampah menggunakan teknologi AI dan drone untuk deteksi sampah dari udara.
 
-### 1. Sorting di Level Database (Recommended)
+## 🚀 Fitur Utama
 
-Ini adalah pendekatan yang paling efisien karena sorting dilakukan di database:
+- **Dashboard Interaktif**: Visualisasi data sampah dengan grafik dan peta
+- **Analisis AI**: Upload dan analisis video aerial untuk deteksi sampah
+- **Data Laporan**: Manajemen dan visualisasi laporan sampah
+- **Filter Lokasi**: Filter data berdasarkan lokasi geografis
+- **Responsive Design**: Antarmuka yang responsif untuk berbagai perangkat
 
-#### MySQL/PostgreSQL
-```sql
-SELECT 
-  year,
-  period,
-  sampah_tertangani as sampahTertangani,
-  produksi_sampah as produksiSampah,
-  peningkatan_pengelolaan as peningkatanPengelolaan,
-  date,
-  unit
-FROM chart_data 
-WHERE 1=1
-  AND unit = 'tahun'
-  AND date >= '2020-01-01'
-  AND date <= '2024-12-31'
-ORDER BY 
-  period ASC  -- atau DESC untuk descending
-LIMIT 100
-OFFSET 0;
-```
+## 📋 Requirements
 
-#### MongoDB
-```javascript
-const filter = {
-  unit: 'tahun',
-  date: { 
-    $gte: new Date('2020-01-01'),
-    $lte: new Date('2024-12-31')
-  }
-};
+### Node.js & NPM
+- Node.js >= 18.0.0
+- NPM >= 9.0.0
 
-const sort = {
-  period: 1  // 1 untuk ASC, -1 untuk DESC
-};
-
-const data = await collection
-  .find(filter)
-  .sort(sort)
-  .limit(100)
-  .toArray();
-```
-
-#### Prisma ORM
-```typescript
-const data = await prisma.chartData.findMany({
-  where: {
-    unit: 'tahun',
-    date: {
-      gte: new Date('2020-01-01'),
-      lte: new Date('2024-12-31')
-    }
-  },
-  orderBy: {
-    period: 'asc'  // atau 'desc'
-  },
-  take: 100,
-  skip: 0
-});
-```
-
-### 2. Sorting di Client-Side (Fallback)
-
-Jika database tidak mendukung sorting atau untuk data yang sudah di-cache:
-
-```typescript
-const sortDataClientSide = (data: ChartData[], sortBy: SortBy, sortOrder: SortOrder) => {
-  return [...data].sort((a, b) => {
-    let aValue: number | string;
-    let bValue: number | string;
-
-    if (sortBy === "year") {
-      aValue = a.period;
-      bValue = b.period;
-    } else {
-      aValue = a[sortBy];
-      bValue = b[sortBy];
-    }
-
-    if (typeof aValue === "string" && typeof bValue === "string") {
-      return sortOrder === "asc" 
-        ? aValue.localeCompare(bValue)
-        : bValue.localeCompare(aValue);
-    } else {
-      return sortOrder === "asc"
-        ? (aValue as number) - (bValue as number)
-        : (bValue as number) - (aValue as number);
-    }
-  });
-};
-```
-
-### 3. Implementasi API Route
-
-Buat file `app/api/chart-data/route.ts`:
-
-```typescript
-import { NextRequest, NextResponse } from 'next/server';
-
-interface DatabaseQueryParams {
-  startDate?: string;
-  endDate?: string;
-  unit?: string;
-  sortBy?: string;
-  sortOrder?: "ASC" | "DESC";
-  limit?: number;
-  offset?: number;
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const params: DatabaseQueryParams = await request.json();
-    
-    // Implementasi query database sesuai dengan database yang digunakan
-    // Contoh untuk MySQL/PostgreSQL:
-    
-    const query = `
-      SELECT 
-        year,
-        period,
-        sampah_tertangani as sampahTertangani,
-        produksi_sampah as produksiSampah,
-        peningkatan_pengelolaan as peningkatanPengelolaan,
-        date,
-        unit
-      FROM chart_data 
-      WHERE 1=1
-        ${params.startDate ? `AND date >= '${params.startDate}'` : ''}
-        ${params.endDate ? `AND date <= '${params.endDate}'` : ''}
-        ${params.unit ? `AND unit = '${params.unit}'` : ''}
-      ORDER BY 
-        ${params.sortBy === 'year' ? 'period' : params.sortBy} 
-        ${params.sortOrder || 'ASC'}
-      ${params.limit ? `LIMIT ${params.limit}` : ''}
-      ${params.offset ? `OFFSET ${params.offset}` : ''}
-    `;
-    
-    // Execute query dan return hasil
-    const data = await executeQuery(query);
-    return NextResponse.json(data);
-    
-  } catch (error) {
-    console.error('Error in chart-data API:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch data' },
-      { status: 500 }
-    );
-  }
+### Dependencies Utama
+```json
+{
+  "react": "19.1.0",
+  "react-dom": "19.1.0", 
+  "next": "15.4.6",
+  "lucide-react": "^0.263.1",
+  "recharts": "^2.8.0",
+  "framer-motion": "^10.16.4",
+  "react-dropzone": "^14.2.3",
+  "date-fns": "^2.30.0",
+  "clsx": "^2.0.0",
+  "tailwind-merge": "^1.14.0"
 }
 ```
 
-### 4. Frontend Implementation
+### Dev Dependencies
+```json
+{
+  "typescript": "^5",
+  "@types/node": "^20",
+  "@types/react": "^19",
+  "@types/react-dom": "^19",
+  "@tailwindcss/postcss": "^4",
+  "tailwindcss": "^4",
+  "eslint": "^8",
+  "eslint-config-next": "15.4.6",
+  "@typescript-eslint/eslint-plugin": "^6.0.0",
+  "@typescript-eslint/parser": "^6.0.0",
+  "prettier": "^3.0.0",
+  "prettier-plugin-tailwindcss": "^0.5.0"
+}
+```
 
-Di komponen React, gunakan `useEffect` untuk mengambil data dari database:
+## 🛠️ Setup & Installation
 
+### 1. Clone Repository
+```bash
+git clone <repository-url>
+cd website-lomba
+```
+
+### 2. Install Dependencies
+```bash
+npm install
+```
+
+### 3. Setup Environment Variables
+Buat file `.env.local` di root directory:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3000/api
+```
+
+### 4. Run Development Server
+```bash
+npm run dev
+```
+
+Aplikasi akan berjalan di `http://localhost:3000`
+
+## 📁 Struktur Proyek
+
+```
+website-lomba/
+├── app/
+│   ├── analisis/          # Halaman analisis AI
+│   ├── api/               # API routes
+│   │   └── chart-data/    # Endpoint data grafik
+│   ├── data/              # Halaman data laporan
+│   ├── section/           # Komponen UI
+│   │   ├── ChartSection.tsx
+│   │   ├── HeaderImage.tsx
+│   │   ├── LocationFilter.tsx
+│   │   ├── MapCard.tsx
+│   │   └── Sidebar.tsx
+│   ├── globals.css        # Global styles
+│   ├── layout.tsx         # Root layout
+│   └── page.tsx           # Homepage
+├── public/                # Static assets
+├── package.json           # Dependencies
+├── next.config.ts         # Next.js config
+├── tsconfig.json          # TypeScript config
+└── tailwind.config.js     # Tailwind CSS config
+```
+
+## 🎯 Fitur Detail
+
+### 1. Dashboard (`/`)
+- Header dengan gambar
+- Filter lokasi
+- Peta interaktif
+- Grafik data sampah dengan filter:
+  - Tanggal awal/akhir
+  - Satuan waktu (hari/minggu/bulan/tahun)
+  - Sorting berdasarkan berbagai metrik
+
+### 2. Analisis AI (`/analisis`)
+- Upload video aerial
+- Kontrol play/pause video
+- Deteksi sampah dengan bounding box
+- Hasil analisis:
+  - Koordinat lokasi
+  - Jumlah sampah terdeteksi
+  - Tingkat keparahan
+  - Akurasi deteksi
+
+### 3. Data Laporan (`/data`)
+- Tabel data laporan sampah
+- Filter dan pencarian
+- Export data
+
+## 🎨 Tech Stack
+
+- **Framework**: Next.js 15.4.6 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS v4
+- **UI Components**: Custom components dengan Tailwind
+- **Charts**: Recharts untuk visualisasi data
+- **Icons**: Lucide React
+- **Animations**: Framer Motion
+- **File Upload**: React Dropzone
+- **Date Handling**: date-fns
+- **Utilities**: clsx, tailwind-merge
+
+## 📊 Data Structure
+
+### Chart Data Interface
 ```typescript
-const [chartData, setChartData] = useState<ChartData[]>([]);
-const [loading, setLoading] = useState(false);
+interface ChartData {
+  year: string;
+  period: string;
+  sampahTertangani: number;
+  produksiSampah: number;
+  peningkatanPengelolaan: number;
+  date: Date;
+  unit: "hari" | "minggu" | "bulan" | "tahun";
+}
+```
 
-const fetchDataFromDatabase = async (params: DatabaseQueryParams) => {
-  setLoading(true);
-  try {
-    const response = await fetch('/api/chart-data', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+## 🚀 Scripts
+
+```bash
+npm run dev          # Development server
+npm run build        # Production build
+npm run start        # Start production server
+npm run lint         # ESLint check
+npm run type-check   # TypeScript type checking
+```
+
+## 🔧 Configuration Files
+
+### next.config.ts
+```typescript
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  experimental: {
+    turbo: {
+      rules: {
+        "*.svg": {
+          loaders: ["@svgr/webpack"],
+          as: "*.js",
+        },
       },
-      body: JSON.stringify(params)
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch data');
-    }
-
-    const data = await response.json();
-    setChartData(data);
-  } catch (error) {
-    console.error('Error fetching data:', error);
-    // Fallback ke data statis jika database error
-    setChartData(rawChartData);
-  } finally {
-    setLoading(false);
-  }
+    },
+  },
 };
 
-useEffect(() => {
-  const params: DatabaseQueryParams = {
-    startDate,
-    endDate,
-    unit,
-    sortBy,
-    sortOrder: sortOrder.toUpperCase() as "ASC" | "DESC"
-  };
-  
-  fetchDataFromDatabase(params);
-}, [startDate, endDate, unit, sortBy, sortOrder]);
+export default nextConfig;
 ```
 
-### 5. Keuntungan dan Kerugian
+### tsconfig.json
+```json
+{
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "es6"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+```
 
-#### Sorting di Database:
-**Keuntungan:**
-- Performa lebih baik untuk dataset besar
-- Mengurangi transfer data
-- Memanfaatkan index database
-- Mendukung pagination yang efisien
+## 🎯 Browser Support
 
-**Kerugian:**
-- Bergantung pada kemampuan database
-- Lebih kompleks untuk implementasi
-- Perlu optimasi query
+- Chrome >= 90
+- Firefox >= 88
+- Safari >= 14
+- Edge >= 90
 
-#### Sorting di Client-Side:
-**Keuntungan:**
-- Implementasi lebih sederhana
-- Fleksibel untuk berbagai jenis sorting
-- Tidak bergantung pada database
+## 📱 Responsive Design
 
-**Kerugian:**
-- Performa buruk untuk dataset besar
-- Transfer data lebih banyak
-- Tidak efisien untuk pagination
+Aplikasi dirancang responsif dengan breakpoints:
+- Mobile: < 768px
+- Tablet: 768px - 1024px
+- Desktop: > 1024px
 
-### 6. Best Practices
+## 🔒 Security
 
-1. **Gunakan Index Database**: Pastikan kolom yang sering di-sort memiliki index
-2. **Implementasi Pagination**: Untuk dataset besar, gunakan LIMIT dan OFFSET
-3. **Caching**: Cache hasil query yang sering digunakan
-4. **Error Handling**: Selalu sediakan fallback untuk data statis
-5. **Loading State**: Tampilkan loading indicator saat mengambil data
-6. **Optimasi Query**: Gunakan EXPLAIN untuk menganalisis performa query
+- Input validation untuk file upload
+- Sanitasi data sebelum render
+- CORS configuration untuk API routes
+- Environment variables untuk sensitive data
 
-### 7. Contoh Implementasi Lengkap
+## 📈 Performance
 
-Lihat file `app/section/ChartSection.tsx` dan `app/api/chart-data/route.ts` untuk implementasi lengkap dengan:
-- Sorting di database
-- Client-side fallback
-- Loading states
-- Error handling
-- Pagination support
+- Image optimization dengan Next.js
+- Code splitting otomatis
+- Lazy loading untuk komponen
+- Bundle analysis dengan `@next/bundle-analyzer`
+
+## 🧪 Testing
+
+Untuk menambahkan testing:
+```bash
+npm install --save-dev jest @testing-library/react @testing-library/jest-dom
+```
+
+## 📝 License
+
+MIT License - lihat file LICENSE untuk detail.
+
+## 🤝 Contributing
+
+1. Fork repository
+2. Buat feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push ke branch (`git push origin feature/AmazingFeature`)
+5. Buat Pull Request
+
+## 📞 Support
+
+Untuk pertanyaan atau dukungan, silakan buat issue di repository ini.
