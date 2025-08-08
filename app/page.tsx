@@ -2,6 +2,7 @@ import Sidebar from "./section/Sidebar";
 import HeaderImage from "./section/HeaderImage";
 import LocationFilter from "./section/LocationFilter";
 import MapCard from "./section/MapCard";
+import ChartSection from "./section/ChartSection";
 
 export default function Home() {
   return (
@@ -9,9 +10,10 @@ export default function Home() {
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <HeaderImage />
-        <main className="flex-1 flex flex-col items-center p-8">
+        <main className="flex-1 flex flex-col items-center p-8 space-y-8">
           <LocationFilter />
           <MapCard />
+          <ChartSection />
         </main>
       </div>
     </div>
