@@ -1,13 +1,31 @@
 "use client";
 import Sidebar from "../section/Sidebar";
 import { useEffect, useRef, useState } from "react";
+import { useVideoDetection } from "../hooks/useVideoDetection";
+import DetectionOverlay from "../components/DetectionOverlay";
 
 export default function AnalisisPage() {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isVideoInserted, setIsVideoInserted] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [enableDetection, setEnableDetection] = useState(false);
+  const [videoMetadata, setVideoMetadata] = useState({ width: 0, height: 0 });
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Use video detection hook
+  const {
+    detections,
+    totalObjects,
+    isDetecting,
+    error: detectionError,
+    startDetection,
+    stopDetection
+  } = useVideoDetection({
+    intervalMs: 300, // Detect every 300ms for better performance
+    confidenceThreshold: 0.76
+  });
 
   const handleInsertVideo = () => {
     fileInputRef.current?.click();
@@ -16,12 +34,37 @@ export default function AnalisisPage() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    // Stop any ongoing detection
+    stopDetection();
+
     // Revoke previous URL if any
     if (videoUrl) URL.revokeObjectURL(videoUrl);
     const url = URL.createObjectURL(file);
     setVideoUrl(url);
     setIsVideoInserted(true);
     setIsVideoPlaying(true);
+  };
+
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      setVideoMetadata({
+        width: videoRef.current.videoWidth,
+        height: videoRef.current.videoHeight
+      });
+    }
+  };
+
+  const handleToggleDetection = () => {
+    if (!videoRef.current || !isVideoInserted) return;
+
+    if (enableDetection) {
+      stopDetection();
+      setEnableDetection(false);
+    } else {
+      startDetection(videoRef.current);
+      setEnableDetection(true);
+    }
   };
 
   const handlePause = () => {
@@ -35,7 +78,15 @@ export default function AnalisisPage() {
   };
 
   const handleReport = () => {
-    alert("Laporan berhasil dibuat!");
+    const reportData = {
+      detections: detections,
+      totalObjects: totalObjects,
+      videoMetadata: videoMetadata,
+      timestamp: new Date().toISOString()
+    };
+
+    console.log('Report Data:', reportData);
+    alert(`Laporan berhasil dibuat!\nTotal objek terdeteksi: ${totalObjects}`);
   };
 
   useEffect(() => {
@@ -47,10 +98,20 @@ export default function AnalisisPage() {
     }
   }, [isVideoPlaying]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopDetection();
+      if (videoUrl) {
+        URL.revokeObjectURL(videoUrl);
+      }
+    };
+  }, [videoUrl, stopDetection]);
+
   return (
     <div className="min-h-screen bg-[#e6fae6] flex text-black">
       <Sidebar />
-      
+
       <main className="flex-1 p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
@@ -76,7 +137,7 @@ export default function AnalisisPage() {
                 onChange={handleFileChange}
                 className="hidden"
               />
-              
+
               <button
                 onClick={handlePause}
                 disabled={!isVideoInserted}
@@ -84,20 +145,56 @@ export default function AnalisisPage() {
               >
                 {isVideoPlaying ? "Pause" : "Play"}
               </button>
-              
+
+              <button
+                onClick={handleToggleDetection}
+                disabled={!isVideoInserted}
+                className={`w-full border border-[#3a7c3a] text-black py-3 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  enableDetection
+                    ? "bg-red-400 hover:bg-red-300"
+                    : "bg-[#b6e6b6] hover:bg-[#a3d6a3]"
+                }`}
+              >
+                {enableDetection ? "Stop Detection" : "Start Detection"}
+              </button>
+
               <button
                 onClick={handleReport}
                 className="w-full bg-[#b6e6b6] border border-[#3a7c3a] text-black py-3 px-4 rounded-lg font-medium hover:bg-[#a3d6a3] transition-colors"
               >
                 Report
               </button>
+
+              {/* Detection Status */}
+              {isVideoInserted && (
+                <div className="bg-white rounded-lg p-3 border border-[#c8eac8]">
+                  <h4 className="font-semibold text-[#3a7c3a] text-sm mb-2">Detection Status</h4>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span>Status:</span>
+                      <span className={`font-medium ${isDetecting ? 'text-green-600' : 'text-gray-600'}`}>
+                        {isDetecting ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Objects:</span>
+                      <span className="font-medium text-[#3a7c3a]">{totalObjects}</span>
+                    </div>
+                    {detectionError && (
+                      <div className="text-red-600 text-xs mt-1">
+                        Error: {detectionError}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Video Display - Right Side */}
             <div className="lg:col-span-3">
               <div className="bg-white border-2 border-white rounded-lg overflow-hidden shadow-lg">
                 {isVideoInserted && videoUrl ? (
-                  <div className="relative">
+                  <div className="relative" ref={containerRef}>
                     <video
                       ref={videoRef}
                       src={videoUrl}
@@ -105,8 +202,20 @@ export default function AnalisisPage() {
                       muted
                       autoPlay
                       playsInline
+                      onLoadedMetadata={handleLoadedMetadata}
                     />
-                    
+
+                    {/* Detection Overlay */}
+                    {enableDetection && detections.length > 0 && containerRef.current && (
+                      <DetectionOverlay
+                        detections={detections}
+                        videoWidth={videoMetadata.width}
+                        videoHeight={videoMetadata.height}
+                        containerWidth={containerRef.current.clientWidth}
+                        containerHeight={384} // h-96 = 384px
+                      />
+                    )}
+
                     {/* Play/Pause Overlay */}
                     {!isVideoPlaying && (
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -117,8 +226,13 @@ export default function AnalisisPage() {
                         </div>
                       </div>
                     )}
-                    {/* Detection box (placeholder) */}
-                    <div className="absolute border-4 border-[#6bd36b]" style={{ top: "28%", left: "48%", width: "72px", height: "72px" }} />
+
+                    {/* Detection indicator */}
+                    {enableDetection && (
+                      <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-medium">
+                        🔴 DETECTING
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="w-full h-96 bg-gray-100 flex items-center justify-center">
@@ -179,7 +293,9 @@ export default function AnalisisPage() {
                   </div>
                   <h4 className="font-bold text-[#3a7c3a]">Jumlah Terdeteksi</h4>
                 </div>
-                <p className="text-gray-700 font-medium">1 tumpukan sampah</p>
+                <p className="text-gray-700 font-medium">
+                  {isDetecting ? `${totalObjects} objek` : "1 tumpukan sampah"}
+                </p>
               </div>
             </div>
 
@@ -194,17 +310,38 @@ export default function AnalisisPage() {
                   </div>
                   <div>
                     <span className="text-gray-600">Tingkat Keparahan:</span>
-                    <p className="font-medium text-orange-600">Sedang</p>
+                    <p className="font-medium text-orange-600">
+                      {totalObjects > 3 ? "Tinggi" : totalObjects > 1 ? "Sedang" : "Rendah"}
+                    </p>
                   </div>
                   <div>
-                    <span className="text-gray-600">Akurasi Deteksi:</span>
-                    <p className="font-medium">95.3%</p>
+                    <span className="text-gray-600">Detection Mode:</span>
+                    <p className="font-medium">
+                      {isDetecting ? "Real-time" : "Static"}
+                    </p>
                   </div>
                   <div>
                     <span className="text-gray-600">Status:</span>
-                    <p className="font-medium text-green-600">Terdeteksi</p>
+                    <p className={`font-medium ${totalObjects > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {totalObjects > 0 ? "Terdeteksi" : "Bersih"}
+                    </p>
                   </div>
                 </div>
+
+                {/* Real-time detection details */}
+                {isDetecting && detections.length > 0 && (
+                  <div className="mt-4 p-3 bg-white rounded border">
+                    <h5 className="font-medium text-[#3a7c3a] mb-2">Deteksi Real-time:</h5>
+                    <div className="space-y-1 text-xs max-h-20 overflow-y-auto">
+                      {detections.map((detection, index) => (
+                        <div key={index} className="flex justify-between items-center">
+                          <span>{detection.class}</span>
+                          <span className="font-medium">{Math.round(detection.confidence * 100)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

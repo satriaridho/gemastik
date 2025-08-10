@@ -5,6 +5,8 @@
 /.pnp
 .pnp.js
 .yarn/install-state.gz
+env/
+.env
 
 # testing
 /coverage
@@ -122,3 +124,133 @@ temp/
 
 # Local Netlify folder
 .netlify
+
+# Python specific
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Machine Learning & AI specific
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.joblib
+*.model
+*.pt
+*.pth
+*.onnx
+*.tflite
+*.pb
+
+# Dataset and Training
+/datasets/
+/data/
+*.csv
+*.json
+*.xml
+*.txt
+/training-data/
+/test-data/
+/validation-data/
+/annotations/
+/labels/
+/images/
+/videos/
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.wmv
+*.jpg
+*.jpeg
+*.png
+*.bmp
+*.tiff
+*.gif
+
+# Model weights and checkpoints
+/weights/
+/checkpoints/
+/runs/
+/wandb/
+/tensorboard/
+/logs/
+
+# Computer Vision specific
+*.zip
+*.tar.gz
+*.7z
+/models/
+/pretrained/
+
+# Label Studio
+label_studio/
+/media/
+
+# Temporary files
+*.tmp
+*.temp
+capture.png
+demo*.avi
+
+# IDE and Editor specific
+.spyderproject
+.spyproject
+.ropeproject
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride

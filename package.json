@@ -10,30 +10,31 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "clsx": "^2.0.0",
+    "date-fns": "^2.30.0",
+    "framer-motion": "^11.0.0",
+    "lucide-react": "^0.539.0",
+    "next": "15.4.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "next": "15.4.6",
-    "lucide-react": "^0.539.0",
-    "recharts": "^2.8.0",
-    "framer-motion": "^11.0.0",
     "react-dropzone": "^14.2.3",
-    "date-fns": "^2.30.0",
-    "clsx": "^2.0.0",
+    "recharts": "^2.8.0",
+    "socket.io-client": "^4.8.1",
     "tailwind-merge": "^1.14.0"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
-    "eslint": "^8",
-    "eslint-config-next": "15.4.6",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8",
+    "eslint-config-next": "15.4.6",
     "prettier": "^3.0.0",
-    "prettier-plugin-tailwindcss": "^0.5.0"
+    "prettier-plugin-tailwindcss": "^0.5.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   },
   "engines": {
     "node": ">=18.0.0",
