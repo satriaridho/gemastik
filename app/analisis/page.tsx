@@ -267,7 +267,7 @@ export default function AnalisisPage() {
                   </div>
                   <h4 className="font-bold text-[#3a7c3a]">Koordinat</h4>
                 </div>
-                <p className="text-gray-700 font-medium">-7.782333, 110.367083</p>
+                <p className="text-gray-700 font-medium">-7.795579, 110.328797</p>
               </div>
 
               {/* Lokasi Card */}
@@ -280,7 +280,7 @@ export default function AnalisisPage() {
                   </div>
                   <h4 className="font-bold text-[#3a7c3a]">Lokasi</h4>
                 </div>
-                <p className="text-gray-700 font-medium">Sidoarum, Godean, Sleman, Daerah Istimewa Yogyakarta</p>
+                <p className="text-gray-700 font-medium">Banyuraden, Kabupaten Sleman, Daerah Istimewa Yogyakarta</p>
               </div>
 
               {/* Jumlah Terdeteksi Card */}
@@ -294,7 +294,7 @@ export default function AnalisisPage() {
                   <h4 className="font-bold text-[#3a7c3a]">Jumlah Terdeteksi</h4>
                 </div>
                 <p className="text-gray-700 font-medium">
-                  {isDetecting ? `${totalObjects} objek` : "1 tumpukan sampah"}
+                  {isDetecting ? `${totalObjects} objek` : "0 tumpukan sampah"}
                 </p>
               </div>
             </div>
