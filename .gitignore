@@ -181,34 +181,28 @@ ENV/
 env.bak/
 venv.bak/
 
-# Machine Learning & AI specific
+# Machine Learning & AI specific (keep essential model files)
 *.h5
 *.hdf5
 *.pkl
 *.pickle
 *.joblib
 *.model
-*.pt
-*.pth
 *.onnx
 *.tflite
 *.pb
 
-# Dataset and Training
+# Dataset and Training (keep some essential files)
 /datasets/
-/data/
 *.csv
 *.json
 *.xml
-*.txt
-/training-data/
 /test-data/
 /validation-data/
 /annotations/
 /labels/
 /images/
 /videos/
-*.mp4
 *.avi
 *.mov
 *.mkv
@@ -220,19 +214,15 @@ venv.bak/
 *.tiff
 *.gif
 
-# Model weights and checkpoints
-/weights/
+# Model weights and checkpoints (keep trained models)
 /checkpoints/
-/runs/
 /wandb/
 /tensorboard/
 /logs/
 
-# Computer Vision specific
-*.zip
+# Computer Vision specific (keep essential files)
 *.tar.gz
 *.7z
-/models/
 /pretrained/
 
 # Label Studio
