@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "../context/LocationContext";
 
 export default function MapCard() {
@@ -10,6 +10,8 @@ export default function MapCard() {
   const [markers, setMarkers] = useState<any[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const mapInitializedRef = useRef(false);
+  const mountedRef = useRef(false);
 
   // Filter locations based on search term
   const filteredLocations = locations.filter((location) =>
@@ -18,6 +20,11 @@ export default function MapCard() {
   );
 
   useEffect(() => {
+    // Prevent multiple initializations
+    if (mapInitializedRef.current || mountedRef.current) return;
+    
+    mountedRef.current = true;
+    
     // Load Leaflet CSS
     const link = document.createElement('link');
     link.rel = 'stylesheet';
@@ -33,10 +40,28 @@ export default function MapCard() {
     return () => {
       // Cleanup
       if (map) {
-        map.remove();
+        try {
+          map.remove();
+        } catch (error) {
+          console.warn('Error removing map:', error);
+        }
+        setMap(null);
+        setMarkers([]);
       }
+      
+      // Clean up map container
+      cleanupMapContainer();
+      
+      mapInitializedRef.current = false;
+      mountedRef.current = false;
+      
+      // Remove Leaflet CSS and JS
+      const existingLink = document.querySelector('link[href*="leaflet"]');
+      const existingScript = document.querySelector('script[src*="leaflet"]');
+      if (existingLink) existingLink.remove();
+      if (existingScript) existingScript.remove();
     };
-  }, []);
+  }, []); // Empty dependency array to ensure it only runs once
 
   const navigateToLocation = (location: any) => {
     if (!map) return;
@@ -58,69 +83,115 @@ export default function MapCard() {
     }
   };
 
-  const initializeMap = () => {
-    if (!mapRef.current || !window.L) return;
+  // Clean up map container function
+  const cleanupMapContainer = useCallback(() => {
+    if (mapRef.current && (mapRef.current as any)._leaflet_id) {
+      try {
+        // Remove the Leaflet instance from the container
+        delete (mapRef.current as any)._leaflet_id;
+      } catch (error) {
+        console.warn('Error cleaning up map container:', error);
+      }
+    }
+  }, []);
+
+  const initializeMap = useCallback(() => {
+    if (!mapRef.current || !window.L || mapInitializedRef.current || !mountedRef.current) {
+      console.log('Map initialization skipped:', {
+        hasRef: !!mapRef.current,
+        hasLeaflet: !!window.L,
+        alreadyInitialized: mapInitializedRef.current,
+        isMounted: mountedRef.current
+      });
+      return;
+    }
 
     const L = window.L;
     
-    const mapInstance = L.map(mapRef.current).setView([-7.795579, 110.328797], 12);
+    // Clean up any existing map instance
+    if (map) {
+      try {
+        console.log('Cleaning up existing map instance');
+        map.remove();
+        setMap(null);
+        setMarkers([]);
+      } catch (error) {
+        console.warn('Error removing existing map:', error);
+      }
+    }
+    
+    // Check if map container already has a map instance
+    if ((mapRef.current as any)._leaflet_id) {
+      console.warn('Map container already has a map instance, cleaning up first');
+      cleanupMapContainer();
+    }
+    
+    try {
+      console.log('Initializing new map instance');
+      const mapInstance = L.map(mapRef.current).setView([-7.795579, 110.328797], 12);
 
-    // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(mapInstance);
-
-    setMap(mapInstance);
-
-    // Add markers for each location
-    const newMarkers: any[] = [];
-    locations.forEach((location) => {
-      const marker = L.marker([location.lat, location.lng], {
-        icon: L.divIcon({
-          className: 'custom-marker',
-          html: `
-            <div style="
-              width: 32px; 
-              height: 32px; 
-              background: ${location.isActive ? '#22c55e' : '#6b7280'}; 
-              border: 2px solid white; 
-              border-radius: 50%; 
-              display: flex; 
-              align-items: center; 
-              justify-content: center; 
-              color: white; 
-              font-weight: bold; 
-              font-size: 12px;
-              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            ">
-              ${location.name.charAt(0)}
-            </div>
-          `,
-          iconSize: [32, 32],
-          iconAnchor: [16, 16]
-        })
+      // Add OpenStreetMap tiles
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
       }).addTo(mapInstance);
 
-      // Add popup
-      marker.bindPopup(`
-        <div style="min-width: 200px;">
-          <h3 style="margin: 0 0 8px 0; color: #3a7c3a; font-weight: bold;">${location.name}</h3>
-          <p style="margin: 4px 0; color: #666;">Tanggal: ${location.date}</p>
-          <p style="margin: 4px 0; color: #666;">Status: ${location.isActive ? 'Sampah' : 'Sampah Terambil'}</p>
-          <p style="margin: 4px 0; color: #666;">Koordinat: ${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}</p>
-        </div>
-      `);
+      setMap(mapInstance);
+      mapInitializedRef.current = true;
+      console.log('Map initialized successfully');
 
-      // Add click listener
-      marker.on('click', () => {
-        setSelectedLocation(location);
+      // Add markers for each location
+      const newMarkers: any[] = [];
+      locations.forEach((location) => {
+        const marker = L.marker([location.lat, location.lng], {
+          icon: L.divIcon({
+            className: 'custom-marker',
+            html: `
+              <div style="
+                width: 32px; 
+                height: 32px; 
+                background: ${location.isActive ? '#22c55e' : '#6b7280'}; 
+                border: 2px solid white; 
+                border-radius: 50%; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                color: white; 
+                font-weight: bold; 
+                font-size: 12px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+              ">
+                ${location.name.charAt(0)}
+              </div>
+            `,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+          })
+        }).addTo(mapInstance);
+
+        // Add popup
+        marker.bindPopup(`
+          <div style="min-width: 200px;">
+            <h3 style="margin: 0 0 8px 0; color: #3a7c3a; font-weight: bold;">${location.name}</h3>
+            <p style="margin: 4px 0; color: #666;">Tanggal: ${location.date}</p>
+            <p style="margin: 4px 0; color: #666;">Status: ${location.isActive ? 'Sampah' : 'Sampah Terambil'}</p>
+            <p style="margin: 4px 0; color: #666;">Koordinat: ${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}</p>
+          </div>
+        `);
+
+        // Add click listener
+        marker.on('click', () => {
+          setSelectedLocation(location);
+        });
+
+        newMarkers.push(marker);
       });
 
-      newMarkers.push(marker);
-    });
-
-    setMarkers(newMarkers);
-  };
+      setMarkers(newMarkers);
+    } catch (error) {
+      console.error('Error initializing map:', error);
+      mapInitializedRef.current = false;
+    }
+  }, [locations, map, cleanupMapContainer]);
 
   return (
     <div className="w-full bg-white rounded-xl shadow-lg p-4 flex flex-col items-center">
